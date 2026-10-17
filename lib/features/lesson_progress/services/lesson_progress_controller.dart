@@ -32,8 +32,12 @@ class LessonProgressController with WidgetsBindingObserver {
   List<DaySegment> get segments =>
       _day != null && _day!.status == DayStatus.working ? _day!.segments : const [];
 
+  /// أقرب يوم دوام قادم له حصص (يُعرض كمعاينة حين لا يوجد جدول لليوم).
+  DayScheduleResult? get upcomingDay => _futureDay;
+
   int? _buildingId;
   DayScheduleResult? _day;
+  DayScheduleResult? _futureDay;
   DaySegment? _futureNext;
   bool _futureSearched = false;
   final Map<int, bool> _executed = {};
@@ -95,6 +99,7 @@ class LessonProgressController with WidgetsBindingObserver {
       _day = day;
       _executed.clear();
       _futureNext = null;
+      _futureDay = null;
       _futureSearched = false;
       lastError = null;
     } catch (e) {
@@ -184,7 +189,10 @@ class LessonProgressController with WidgetsBindingObserver {
       }
       if (r.status != DayStatus.working) continue;
       for (final s in r.segments) {
-        if (s.kind == SegmentKind.lesson && s.start.isAfter(now)) return s;
+        if (s.kind == SegmentKind.lesson && s.start.isAfter(now)) {
+          _futureDay = r;
+          return s;
+        }
       }
     }
     return null;
