@@ -7,6 +7,7 @@ const List<(String, String, String)> kBuiltInSounds = [
   ('bell_electric', 'جرس إلكتروني', 'assets/sounds/bell_electric.wav'),
   ('bell_chime', 'نغمة دق ودق', 'assets/sounds/bell_chime.wav'),
   ('bell_soft', 'نغمة هادئة', 'assets/sounds/bell_soft.wav'),
+  ('bell_attached', 'الجرس المرفق (MP3)', 'assets/sounds/bell_attached.mp3'),
 ];
 
 class AppDatabase {
