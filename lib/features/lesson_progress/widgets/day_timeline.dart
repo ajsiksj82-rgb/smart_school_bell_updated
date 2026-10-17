@@ -35,7 +35,17 @@ class _DayTimelineState extends State<DayTimeline> {
     return ValueListenableBuilder<ProgressSnapshot?>(
       valueListenable: widget.controller.snapshot,
       builder: (context, snap, _) {
-        final segs = widget.controller.segments;
+        var segs = widget.controller.segments;
+        var preview = false;
+        String? previewDay;
+        if (snap != null && segs.isEmpty) {
+          final up = widget.controller.upcomingDay;
+          if (up != null && up.segments.isNotEmpty) {
+            segs = up.segments;
+            preview = true;
+            previewDay = _dayName(snap.now, up.date);
+          }
+        }
         if (snap == null || segs.isEmpty) return const SizedBox.shrink();
         final now = snap.now;
         final theme = Theme.of(context);
@@ -66,11 +76,12 @@ class _DayTimelineState extends State<DayTimeline> {
                         const Icon(Icons.timeline, color: _lessonColor),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text('السير الزمني لليوم',
+                          child: Text(
+                              preview ? 'جدول $previewDay' : 'السير الزمني لليوم',
                               style: theme.textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700)),
                         ),
-                        if (lessons.isNotEmpty)
+                        if (lessons.isNotEmpty && !preview)
                           Text('انتهى $doneLessons من ${lessons.length} حصص',
                               style: theme.textTheme.bodySmall),
                         Icon(_expanded ? Icons.expand_less : Icons.expand_more),
@@ -91,6 +102,7 @@ class _DayTimelineState extends State<DayTimeline> {
                         now: now,
                         isFirst: i == 0,
                         isLast: i == segs.length - 1,
+                        preview: preview,
                       ),
                   ],
                 ],
@@ -241,7 +253,11 @@ class _TimelineRow extends StatelessWidget {
     required this.now,
     required this.isFirst,
     required this.isLast,
+    this.preview = false,
   });
+
+  /// معاينة يوم قادم: لا عدّ تنازلي، فقط الأوقات.
+  final bool preview;
 
   final DaySegment segment;
   final DateTime now;
@@ -269,7 +285,7 @@ class _TimelineRow extends StatelessWidget {
       case _State.current:
         status = 'جارية • متبقي ${_words(segment.end.difference(now))}';
       case _State.upcoming:
-        status = 'بعد ${_words(segment.start.difference(now))}';
+        status = preview ? '' : 'بعد ${_words(segment.start.difference(now))}';
     }
 
     final subject = segment.subject?.trim();
@@ -335,7 +351,7 @@ class _TimelineRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(status, style: theme.textTheme.bodySmall),
+                    if (status.isNotEmpty) Text(status, style: theme.textTheme.bodySmall),
                     if (st == _State.current) ...[
                       const SizedBox(height: 6),
                       ClipRRect(
@@ -420,4 +436,21 @@ String _words(Duration d) {
   if (h > 0) return '$h س ${_two(m)} د';
   if (m > 0) return '$m د ${_two(s)} ث';
   return '$s ث';
+}
+
+String _dayName(DateTime now, DateTime d) {
+  final diff = DateTime(d.year, d.month, d.day)
+      .difference(DateTime(now.year, now.month, now.day))
+      .inDays;
+  if (diff == 1) return 'الغد';
+  const names = {
+    DateTime.saturday: 'السبت',
+    DateTime.sunday: 'الأحد',
+    DateTime.monday: 'الاثنين',
+    DateTime.tuesday: 'الثلاثاء',
+    DateTime.wednesday: 'الأربعاء',
+    DateTime.thursday: 'الخميس',
+    DateTime.friday: 'الجمعة',
+  };
+  return 'يوم ${names[d.weekday] ?? ''}';
 }
