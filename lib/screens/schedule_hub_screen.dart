@@ -138,6 +138,7 @@ class _AutoSetupScreenState extends State<AutoSetupScreen> {
       breakMinutes: _n(_breakMin),
       assemblyMinutes: _n(_assembly),
       soundId: widget.building.defaultSound,
+      typeSounds: app.categorySounds,
     );
     if (!mounted) return;
     setState(() => _busy = false);
