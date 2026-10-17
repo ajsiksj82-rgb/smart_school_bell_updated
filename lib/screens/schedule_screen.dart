@@ -158,6 +158,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       breakMinutes: n(breakMin),
       assemblyMinutes: n(assembly),
       soundId: widget.building.defaultSound,
+      typeSounds: _app.categorySounds,
     );
     if (!mounted) return;
     if (err != null) showMsg(context, err, error: true);
