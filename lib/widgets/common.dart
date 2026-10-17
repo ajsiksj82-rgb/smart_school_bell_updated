@@ -82,13 +82,18 @@ class AppCard extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (accent != null) Container(width: 5, color: accent),
-                Expanded(child: Padding(padding: padding, child: child)),
-              ],
-            ),
+            // IntrinsicHeight ضروري: Row بمحاذاة stretch داخل ListView (ارتفاع غير محدود) يسبب خطأ تخطيط.
+            child: accent == null
+                ? Padding(padding: padding, child: child)
+                : IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(width: 5, color: accent),
+                        Expanded(child: Padding(padding: padding, child: child)),
+                      ],
+                    ),
+                  ),
           ),
         ),
       ),
