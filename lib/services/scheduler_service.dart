@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 
 import '../features/lesson_progress/repositories/schedule_day_provider.dart';
@@ -34,7 +36,13 @@ class SchedulerService {
   /// يبني المواعيد دون جدولتها (قابل للاختبار).
   Future<List<Map<String, dynamic>>> plan() async {
     final now = _clock();
-    final sounds = {for (final s in await _settings.sounds()) s.id: s.assetPath};
+    final allSounds = await _settings.sounds();
+    // الصوت المستورد الذي حُذف ملفه (مثلًا بعد استعادة نسخة احتياطية) يسقط إلى الصوت الافتراضي.
+    final sounds = <String, String>{
+      for (final s in allSounds)
+        if (!s.assetPath.startsWith('/') || File(s.assetPath).existsSync()) s.id: s.assetPath
+    };
+    final categories = await _settings.categorySounds();
     final usage = (await _settings.get('audio_usage')) == 'media' ? 'media' : 'alarm';
     final fallbackAsset = sounds['bell_classic'] ?? (sounds.values.isEmpty ? '' : sounds.values.first);
 
@@ -62,7 +70,7 @@ class SchedulerService {
           final e = BellEvent.fromMap(r);
           final at = DateTime(date.year, date.month, date.day, e.minute ~/ 60, e.minute % 60);
           if (!at.isAfter(now)) continue;
-          final soundId = e.soundId ?? (b['dsound'] as String?) ?? 'bell_classic';
+          final soundId = e.soundId ?? categories[e.type] ?? (b['dsound'] as String?) ?? 'bell_classic';
           raw.add({
             'local': '${ymd(date)} ${hm(e.minute)}',
             'date': ymd(date),
