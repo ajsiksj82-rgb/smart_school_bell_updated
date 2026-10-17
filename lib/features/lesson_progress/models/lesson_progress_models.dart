@@ -103,7 +103,11 @@ class SegmentBuilder {
       final e = at(end.minuteOfDay);
       if (e.isAfter(s)) {
         final label = o.label?.trim();
-        final hasLabel = label != null && label.isNotEmpty;
+        // تجاهل اسم تقني مثل lessonStart إن حُفظ بالخطأ كاسم مخصص.
+        final hasLabel = label != null &&
+            label.isNotEmpty &&
+            !BellEventType.values
+                .any((t) => t.name.toLowerCase() == label.toLowerCase());
         switch (o.type) {
           case BellEventType.lessonStart:
             out.add(DaySegment(
