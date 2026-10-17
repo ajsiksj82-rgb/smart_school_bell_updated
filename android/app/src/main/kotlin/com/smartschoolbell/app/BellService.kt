@@ -136,6 +136,12 @@ class BellService : Service() {
     }
 
     private fun copyAsset(assetPath: String): File {
+        // ملف صوت مستورد من المستخدم (مسار مطلق داخل مساحة التطبيق)
+        if (assetPath.startsWith("/")) {
+            val f = File(assetPath)
+            if (f.exists() && f.length() > 0L) return f
+            throw java.io.FileNotFoundException(assetPath)
+        }
         val out = File(cacheDir, "snd_" + assetPath.replace('/', '_'))
         if (!out.exists() || out.length() == 0L) {
             assets.open("flutter_assets/$assetPath").use { i ->
