@@ -12,13 +12,7 @@ import '../utils/time_utils.dart';
 import '../widgets/common.dart';
 import '../widgets/manual_bell_sheet.dart';
 import 'about_screen.dart';
-import 'backup_screen.dart';
-import 'holidays_screen.dart';
-import 'logs_screen.dart';
-import 'schedule_hub_screen.dart';
 import 'schools_screen.dart';
-import 'settings_screen.dart';
-import 'sounds_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -120,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     _bellButtons(app),
                   ],
                   const SizedBox(height: 8),
-                  _shortcuts(app),
                   _developerFooter(),
                 ],
               ),
@@ -329,62 +322,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     ]);
-  }
-
-  Widget _shortcuts(AppState app) {
-    final sel = app.selected;
-    final items = <(IconData, String, Color, VoidCallback)>[
-      (Icons.schedule, 'الجدول', const Color(0xFF1565C0), () {
-        if (sel == null) {
-          showMsg(context, 'اختر مبنى أولًا', error: true);
-        } else {
-          _push(ScheduleHubScreen(building: sel.building, schoolName: sel.schoolName));
-        }
-      }),
-      (Icons.library_music, 'الأصوات', const Color(0xFF6A1B9A), () => _push(const SoundsScreen())),
-      (Icons.beach_access, 'الإجازات', const Color(0xFFEF6C00), () => _push(const HolidaysScreen())),
-      (Icons.business, 'المدارس', const Color(0xFF00796B), () => _push(const SchoolsScreen())),
-      (Icons.history, 'السجل', const Color(0xFF546E7A), () => _push(const LogsScreen())),
-      (Icons.backup, 'النسخ الاحتياطي', const Color(0xFF2E7D32), () => _push(const BackupScreen())),
-      (Icons.settings, 'الإعدادات', const Color(0xFF455A64), () => _push(const SettingsScreen())),
-      (Icons.person, 'عن المطوّر', const Color(0xFFC2185B), () => _push(const AboutScreen())),
-    ];
-    return LayoutBuilder(builder: (context, c) {
-      const gap = 8.0;
-      const cols = 4;
-      final w = (c.maxWidth - gap * (cols - 1)) / cols;
-      return Wrap(
-        spacing: gap,
-        runSpacing: gap,
-        children: [
-          for (final it in items)
-            SizedBox(
-              width: w,
-              child: AppCard(
-                margin: EdgeInsets.zero,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                onTap: it.$4,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: it.$3.withAlpha(28),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(it.$1, size: 24, color: it.$3),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(it.$2,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ]),
-              ),
-            ),
-        ],
-      );
-    });
   }
 
   Widget _developerFooter() {
