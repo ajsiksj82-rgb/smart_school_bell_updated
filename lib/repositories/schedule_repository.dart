@@ -141,6 +141,7 @@ class ScheduleRepository {
     required int breakMinutes,
     required int assemblyMinutes,
     String? soundId,
+    Map<BellEventType, String?>? typeSounds,
     int durationSec = 5,
   }) {
     const none = <BellEvent>[];
@@ -163,7 +164,7 @@ class ScheduleRepository {
       return (error: 'الجدول يتجاوز منتصف الليل. قلّل عدد الحصص أو قدّم وقت البداية.', events: none);
     }
     BellEvent ev(BellEventType t, int m) =>
-        BellEvent(scheduleId: scheduleId, type: t, minute: m, soundId: soundId, durationSec: durationSec);
+        BellEvent(scheduleId: scheduleId, type: t, minute: m, soundId: typeSounds?[t] ?? soundId, durationSec: durationSec);
     final list = <BellEvent>[];
     var t = startMinute;
     list.add(ev(BellEventType.dayStart, t));
@@ -196,6 +197,7 @@ class ScheduleRepository {
     required int breakMinutes,
     required int assemblyMinutes,
     String? soundId,
+    Map<BellEventType, String?>? typeSounds,
     int durationSec = 5,
   }) async {
     if (scheduleIds.isEmpty) return 'اختر يومًا واحدًا على الأقل';
@@ -210,6 +212,7 @@ class ScheduleRepository {
         breakMinutes: breakMinutes,
         assemblyMinutes: assemblyMinutes,
         soundId: soundId,
+        typeSounds: typeSounds,
         durationSec: durationSec,
       );
       if (p.error != null) return p.error;
@@ -243,6 +246,7 @@ class ScheduleRepository {
     required int breakMinutes,
     required int assemblyMinutes,
     String? soundId,
+    Map<BellEventType, String?>? typeSounds,
     int durationSec = 5,
   }) =>
       quickGenerateDays(
@@ -254,6 +258,7 @@ class ScheduleRepository {
         breakMinutes: breakMinutes,
         assemblyMinutes: assemblyMinutes,
         soundId: soundId,
+        typeSounds: typeSounds,
         durationSec: durationSec,
       );
 
