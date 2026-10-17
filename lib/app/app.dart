@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import '../screens/home_screen.dart';
+import '../screens/main_shell.dart';
 import 'app_state.dart';
 
 const Color kPrimary = Color(0xFF0D2B5E);
@@ -48,6 +48,19 @@ class SmartSchoolBellApp extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Colors.white,
+            indicatorColor: kSecondary.withAlpha(60),
+            height: 68,
+            labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+                  fontSize: 12,
+                  fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500,
+                  color: states.contains(WidgetState.selected) ? kPrimary : Colors.blueGrey.shade600,
+                )),
+            iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+                  color: states.contains(WidgetState.selected) ? kPrimary : Colors.blueGrey.shade600,
+                )),
+          ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: Colors.white,
@@ -58,7 +71,7 @@ class SmartSchoolBellApp extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
-        home: const HomeScreen(),
+        home: const MainShell(),
       ),
     );
   }
