@@ -1,8 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../database/app_database.dart';
+import '../features/lesson_progress/models/lesson_progress_models.dart' show BellEventType;
 import '../features/lesson_progress/repositories/schedule_day_provider.dart';
 import '../models/models.dart';
 import '../repositories/holiday_repository.dart';
@@ -42,6 +47,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   // الحالة المعروضة
   BuildingRef? selected;
   List<SoundProfile> sounds = [];
+
+  /// الجرس المخصص لكل نوع حدث (بداية حصة / نهاية حصة / بداية طابور).
+  Map<BellEventType, String?> categorySounds = {};
   List<Map<String, dynamic>> alarms = [];
   int scheduledCount = 0;
   bool exactAllowed = true;
@@ -61,7 +69,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> init() async {
     WidgetsBinding.instance.addObserver(this);
+    await settings.ensureBuiltInSounds();
     sounds = await settings.sounds();
+    categorySounds = await settings.categorySounds();
     audioUsage = (await settings.get('audio_usage')) == 'media' ? 'media' : 'alarm';
     await _restoreSelection();
     await refreshStatus();
@@ -172,6 +182,69 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> syncNativeLogs() async {
     final entries = await native.pullLogs();
     if (entries.isNotEmpty) await logs.importNative(entries);
+  }
+
+  static const _audioExts = {'mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'};
+
+  /// يستورد ملفًا صوتيًا من الجهاز إلى مكتبة التطبيق. يرجع معرّف الصوت، أو null إن أُلغي،
+  /// أو يرمي [String] برسالة خطأ للعرض.
+  Future<String?> importSound(Future<String?> Function(String suggestedName) askName) async {
+    final res = await FilePicker.platform.pickFiles(type: FileType.audio, allowMultiple: false);
+    if (res == null || res.files.isEmpty) return null;
+    final f = res.files.first;
+    final src = f.path;
+    if (src == null) throw 'تعذر الوصول إلى الملف المختار';
+    final ext = p.extension(src).replaceFirst('.', '').toLowerCase();
+    if (!_audioExts.contains(ext)) throw 'صيغة غير مدعومة. استخدم MP3 أو WAV أو M4A أو AAC أو OGG';
+    if (await File(src).length() > 15 * 1024 * 1024) throw 'الملف كبير (الحد 15 ميغابايت)';
+    final name = await askName(p.basenameWithoutExtension(f.name));
+    if (name == null || name.trim().isEmpty) return null;
+    final dir = Directory(p.join((await getApplicationDocumentsDirectory()).path, 'sounds'));
+    await dir.create(recursive: true);
+    final id = 'custom_${DateTime.now().millisecondsSinceEpoch}';
+    final dest = p.join(dir.path, '$id.$ext');
+    await File(src).copy(dest);
+    await settings.addCustomSound(id, name.trim(), dest);
+    sounds = await settings.sounds();
+    await logs.change('استيراد جرس: ${name.trim()}');
+    _notify();
+    return id;
+  }
+
+  bool isCustomSound(SoundProfile s) => s.id.startsWith('custom_');
+
+  Future<void> deleteSound(SoundProfile s) async {
+    if (!isCustomSound(s)) return;
+    final db = database.db;
+    await db.update('bell_events', {'sound_id': null}, where: 'sound_id = ?', whereArgs: [s.id]);
+    await db.update('buildings', {'default_sound': null}, where: 'default_sound = ?', whereArgs: [s.id]);
+    for (final e in categorySounds.entries.toList()) {
+      if (e.value == s.id) {
+        await settings.set(SettingsRepository.categoryKeys[e.key]!, null);
+        categorySounds[e.key] = null;
+      }
+    }
+    await settings.deleteSound(s.id);
+    try {
+      final f = File(s.assetPath);
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+    sounds = await settings.sounds();
+    await logs.change('حذف جرس مستورد: ${s.name}');
+    dataChanged();
+  }
+
+  /// يعيّن جرسًا لنوع حدث ويطبّقه على كل أحداث هذا النوع في كل الجداول.
+  Future<void> setCategorySound(BellEventType type, String soundId) async {
+    final key = SettingsRepository.categoryKeys[type];
+    if (key == null) return;
+    await settings.set(key, soundId);
+    categorySounds[type] = soundId;
+    await database.db
+        .update('bell_events', {'sound_id': soundId}, where: 'event_type = ?', whereArgs: [type.name]);
+    final name = sounds.where((s) => s.id == soundId).map((s) => s.name).firstOrNull ?? soundId;
+    await logs.change('تعيين جرس "$name" لكل أحداث: ${bellTypeLabel(type)}');
+    dataChanged();
   }
 
   String soundAsset(String? soundId) {
